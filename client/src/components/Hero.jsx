@@ -1,6 +1,6 @@
 // src/components/Hero.jsx
 import React from "react";
-import { Link } from "react-router-dom"; // assuming react-router-dom is used
+import { Link } from "react-router-dom"; 
 
 const Hero = () => {
   return (
@@ -26,7 +26,7 @@ const Hero = () => {
             Start Creating Now
           </Link>
           <a
-            href="#features"
+            href="#ai-tools"
             className="border border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-white hover:text-slate-900 transition"
           >
             AI Tools

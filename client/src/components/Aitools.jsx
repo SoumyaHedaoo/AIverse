@@ -6,7 +6,7 @@ const Aitools = ({ user }) => {
   const navigate = useNavigate();
 
   return (
-    <section className="py-20 bg-gray-50">
+    <section id="ai-tools" className="py-20 bg-gray-50">
       {/* Section Header */}
       <div className="max-w-4xl mx-auto text-center mb-12">
         <h2 className="text-3xl md:text-4xl font-bold text-slate-900">
