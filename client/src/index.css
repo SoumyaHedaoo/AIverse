@@ -8,3 +8,7 @@
 html {
   scroll-behavior: smooth;
 }
+
+.reset-tw , .reset-tw * {
+  all : revert !important
+}

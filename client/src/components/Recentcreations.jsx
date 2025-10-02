@@ -39,7 +39,7 @@ const Recentcreations = ({item}) => {
                         </div>
                     ) : (
                         <div className="p-4">
-                            <div className="prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-blockquote:text-gray-700 prose-code:text-blue-600 prose-pre:bg-gray-100">
+                            <div className=" reset-tw prose prose-sm max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-strong:text-gray-900 prose-ul:text-gray-700 prose-ol:text-gray-700 prose-blockquote:text-gray-700 prose-code:text-blue-600 prose-pre:bg-gray-100">
                                <Markdown>{item.content}</Markdown> 
                             </div>
                         </div>
