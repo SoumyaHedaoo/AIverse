@@ -20,14 +20,14 @@ const Hero = () => {
         {/* CTA Buttons */}
         <div className="flex flex-wrap gap-4">
           <Link
-            to="/create"
+            to="/ai"
             className="bg-indigo-600 hover:bg-indigo-700 transition text-white font-semibold px-6 py-3 rounded-lg shadow"
           >
             Start Creating Now
           </Link>
           <a
             href="#ai-tools"
-            className="border border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-white hover:text-slate-900 transition"
+            className="border border-white text-white font-semibold px-6 py-3 rounded-lg hover:bg-white hover:text-slate-900 transition "
           >
             AI Tools
           </a>
