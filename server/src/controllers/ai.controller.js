@@ -1,6 +1,6 @@
 import { clerkClient } from "@clerk/express";
 import { FREE_PLAN, PREMIUM_PLAN } from "../constant.js";
-import { sql } from "../db.js";
+import { sql } from "../db/index.js";
 import { expressAsyncHandler } from "../utils/expressAsyncHandler.js";
 import OpenAI from "openai";
 import { ApiResponse } from "../utils/apiResponse.js";

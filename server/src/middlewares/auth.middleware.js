@@ -1,7 +1,7 @@
 import { clerkClient } from "@clerk/express";
-import { expressAsyncHandler } from "../utils/expressAsyncHandler";
-import { ApiError } from "../utils/apiError";
-import { PREMIUM_PLAN } from "../constant";
+import { expressAsyncHandler } from "../utils/expressAsyncHandler.js";
+import { ApiError } from "../utils/apiError.js";
+import { PREMIUM_PLAN } from "../constant.js";
 
 /**
  * A middleware that check user status , userPlan , userFreeUsage and inject it in req.body object
