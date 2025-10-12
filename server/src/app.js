@@ -1,7 +1,7 @@
 import express from "express";
 import cors from "cors";
 import { reqLimit } from "./constant.js";
-import { clerkMiddleware } from "@clerk/express";
+import { clerkMiddleware, requireAuth } from "@clerk/express";
 
 //AN express application instance
 const app= express();
@@ -17,6 +17,8 @@ app.use(express.urlencoded({
 }));
 app.use(clerkMiddleware());
 
+import aiRouter from './routes/ai.routes.js';
 
+app.use('/api/v1/ai' , requireAuth() , aiRouter);
 
 export {app};
