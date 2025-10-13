@@ -17,6 +17,10 @@ app.use(express.urlencoded({
 }));
 app.use(clerkMiddleware());
 
+app.get('/' , (req , res)=>{
+    res.send("app working fine");
+});
+
 import aiRouter from './routes/ai.routes.js';
 
 app.use('/api/v1/ai' , requireAuth() , aiRouter);
