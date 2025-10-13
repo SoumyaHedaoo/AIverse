@@ -35,12 +35,14 @@ const generateArticle = expressAsyncHandler(async(req , res)=>{
 
     const content = response.choices[0].message.content;
 
-    await sql`INSERT INTO CREATION (user_id , prompt , content , type) 
+    await sql`INSERT INTO creations (user_id , prompt , content , type) 
               VALUES(${userId} , ${prompt} , ${content} , 'article' )`;
 
     if(plan !== FREE_PLAN){
         await clerkClient.users.updateUserMetadata(userId , {
-            free_usage : free_usage+1,
+            privateMetadata :{
+                free_usage : free_usage+1,
+            }
         })
     }
 
