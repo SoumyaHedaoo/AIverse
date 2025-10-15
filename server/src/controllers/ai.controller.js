@@ -6,6 +6,7 @@ import OpenAI from "openai";
 import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import axios from "axios";
+import { uploadOnCloudinary } from "../utils/cloudinaryUploader.js";
 
 const ai = new OpenAI({
     apiKey: `${process.env.GEMINI_API_KEY}`,
@@ -90,7 +91,35 @@ const generateBlogTitle = expressAsyncHandler(async(req , res)=>{
             .json(new ApiResponse(200 , content , "Article generated successfully"));
 })
 
+const generateImage = expressAsyncHandler(async(req , res)=>{
+    
+    const {userId} = req.auth();
+    const {prompt , publish} = req.body;
+    const plan = req.plan;
 
+    if(plan !== PREMIUM_PLAN) throw new ApiError(400 , "premium feature | Upgrade to continue");
+
+    const formData = new FormData()
+    form.append('prompt', prompt)
+
+    await axios('https://clipdrop-api.co/text-to-image/v1',formData, {
+        method: 'POST',
+        headers: {'x-api-key': process.env.CLIPDROP_API_KEY,},
+        respnoseType : 'arraybuffer',
+    })
+
+    const base64Image = `data:image/png;base64,${buffer.from(data , 'binary').toString('base64')}`;
+
+    const secureUrl = await uploadOnCloudinary(base64Image);
+    
+    await sql`INSERT INTO creations (user_id , prompt , content , type) 
+              VALUES(${userId} , ${prompt} , ${secureUrl} , 'image' , ${publish? true : false} )`;
+
+
+    return res
+            .status(200)
+            .json(new ApiResponse(200 , content , "Article generated successfully"));
+})
 
 export {
     generateArticle ,
