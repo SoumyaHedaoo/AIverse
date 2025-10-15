@@ -100,28 +100,32 @@ const generateImage = expressAsyncHandler(async(req , res)=>{
     if(plan !== PREMIUM_PLAN) throw new ApiError(400 , "premium feature | Upgrade to continue");
 
     const formData = new FormData()
-    form.append('prompt', prompt)
+    formData.append('prompt', prompt)
 
-    await axios('https://clipdrop-api.co/text-to-image/v1',formData, {
+    const {data} = await axios.post('https://clipdrop-api.co/text-to-image/v1',formData, {
         method: 'POST',
         headers: {'x-api-key': process.env.CLIPDROP_API_KEY,},
-        respnoseType : 'arraybuffer',
+        responseType : 'arraybuffer',
     })
 
-    const base64Image = `data:image/png;base64,${buffer.from(data , 'binary').toString('base64')}`;
+    const base64Image = `data:image/png;base64,${Buffer.from(data , 'binary').toString('base64')}`;
 
     const secureUrl = await uploadOnCloudinary(base64Image);
+    if (!secureUrl) throw new ApiError(500, "Image upload to Cloudinary failed");
     
-    await sql`INSERT INTO creations (user_id , prompt , content , type) 
-              VALUES(${userId} , ${prompt} , ${secureUrl} , 'image' , ${publish? true : false} )`;
+    await sql`
+    INSERT INTO creations (user_id, prompt, content, type, publish)
+    VALUES (${userId}, ${prompt}, ${secureUrl}, 'image', ${publish ? true : false})
+  `;
 
 
     return res
             .status(200)
-            .json(new ApiResponse(200 , content , "Article generated successfully"));
+            .json(new ApiResponse(200 , secureUrl , "Image generated successfully"));
 })
 
 export {
     generateArticle ,
-    generateBlogTitle
+    generateBlogTitle , 
+    generateImage ,
 }
