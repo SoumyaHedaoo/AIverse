@@ -1,9 +1,9 @@
-import cloudinary from "./cloudinaryConfig"
+import cloudinary from "./cloudinaryConfig.js"
 import fs from 'fs/promises';
 
 const uploadOnCloudinary = async (filePath)=>{
     try {
-        const uploadResponse =await  cloudinary.uploader.upload(filePath , {resource_type : auto});
+        const uploadResponse =await  cloudinary.uploader.upload(filePath , {resource_type : "auto"});
 
         console.log("File uploaded Successfully!!!");
         
