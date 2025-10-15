@@ -7,6 +7,7 @@ import { ApiResponse } from "../utils/apiResponse.js";
 import { ApiError } from "../utils/apiError.js";
 import axios from "axios";
 import { uploadOnCloudinary } from "../utils/cloudinaryUploader.js";
+import fs from 'fs/promises';
 
 const ai = new OpenAI({
     apiKey: `${process.env.GEMINI_API_KEY}`,
@@ -126,7 +127,8 @@ const generateImage = expressAsyncHandler(async(req , res)=>{
 
 const removeBackground = expressAsyncHandler(async (req, res) => {
   const { userId } = req.auth();
-  const image = req.file; // file uploaded via middleware like multer
+  const image = req.file; 
+  const imageLocalPath = req.file?.path;
   const plan = req.plan;
 
   if (plan !== PREMIUM_PLAN) {
@@ -155,6 +157,8 @@ const removeBackground = expressAsyncHandler(async (req, res) => {
     throw new ApiError(500, "Unable to upload to Cloudinary");
   }
 
+  fs.unlink(imageLocalPath);
+  
   await sql`
     INSERT INTO creations (user_id, prompt, content, type)
     VALUES (${userId}, 'remove background from image', ${cloudinaryUrl}, 'image')
@@ -165,9 +169,44 @@ const removeBackground = expressAsyncHandler(async (req, res) => {
           .json(new ApiResponse(200, { url: cloudinaryUrl }, "Background removed successfully"));
 });
 
+const removeObject = expressAsyncHandler(async (req, res) => {
+  const { userId } = req.auth();
+  const {objectToRemove} = req.body;
+  const imageLocalPath = req.file?.path;
+  const plan = req.plan;
+
+  if (plan !== PREMIUM_PLAN) {
+    throw new ApiError(400, "premium feature | Upgrade to continue");
+  }
+
+  const cloudinaryUrl = await uploadOnCloudinary(imageLocalPath);
+  if (!cloudinaryUrl) {
+    throw new ApiError(500, "Unable to upload to Cloudinary");
+  }
+
+  const parts = cloudinaryUrl.split('/upload/');
+  if (parts.length !== 2) {
+      throw new ApiError(500, "Invalid Cloudinary URL format");
+  }
+  const transformedUrl = `${parts[0]}/upload/e_gen_remove:prompt_${objectToRemove}/${parts[1]}`;
+
+
+  await fs.unlink(imageLocalPath);
+  
+  await sql`
+    INSERT INTO creations (user_id, prompt, content, type)
+    VALUES (${userId}, 'remove background from image', ${transformedUrl}, 'image')
+  `;
+
+  return res
+          .status(200)
+          .json(new ApiResponse(200, { url: transformedUrl }, "object removed successfully"));
+});
+
 export {
     generateArticle ,
     generateBlogTitle , 
     generateImage ,
     removeBackground ,
+    removeObject ,
 }
