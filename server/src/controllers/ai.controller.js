@@ -70,7 +70,7 @@ const generateBlogTitle = expressAsyncHandler(async(req , res)=>{
         },
     ],
     temperature : 0.7,
-    max_tokens : 50,
+    max_tokens : 200,
 });
 
     const content = response.choices[0].message.content;
@@ -88,7 +88,7 @@ const generateBlogTitle = expressAsyncHandler(async(req , res)=>{
 
     return res
             .status(200)
-            .json(new ApiResponse(200 , content , "Article generated successfully"));
+            .json(new ApiResponse(200 , content , "Title generated successfully"));
 })
 
 const generateImage = expressAsyncHandler(async(req , res)=>{
@@ -124,8 +124,50 @@ const generateImage = expressAsyncHandler(async(req , res)=>{
             .json(new ApiResponse(200 , secureUrl , "Image generated successfully"));
 })
 
+const removeBackground = expressAsyncHandler(async (req, res) => {
+  const { userId } = req.auth();
+  const image = req.file; // file uploaded via middleware like multer
+  const plan = req.plan;
+
+  if (plan !== PREMIUM_PLAN) {
+    throw new ApiError(400, "premium feature | Upgrade to continue");
+  }
+
+  const formData = new FormData();
+  formData.append('image', image.buffer, image.originalname);
+
+  const response = await axios.post(
+    'https://clipdrop-api.co/remove-background/v1',
+    formData,
+    {
+      headers: {
+        'x-api-key': process.env.CLIPDROP_API_KEY,
+        ...formData.getHeaders(),
+      },
+      responseType: 'arraybuffer',
+    }
+  );
+
+  const base64Image = `data:image/png;base64,${Buffer.from(response.data).toString('base64')}`;
+  const cloudinaryUrl = await uploadOnCloudinary(base64Image);
+
+  if (!cloudinaryUrl) {
+    throw new ApiError(500, "Unable to upload to Cloudinary");
+  }
+
+  await sql`
+    INSERT INTO creations (user_id, prompt, content, type)
+    VALUES (${userId}, 'remove background from image', ${cloudinaryUrl}, 'image')
+  `;
+
+  return res
+          .status(200)
+          .json(new ApiResponse(200, { url: cloudinaryUrl }, "Background removed successfully"));
+});
+
 export {
     generateArticle ,
     generateBlogTitle , 
     generateImage ,
+    removeBackground ,
 }
