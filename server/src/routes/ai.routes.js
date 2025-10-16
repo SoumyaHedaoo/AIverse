@@ -11,6 +11,6 @@ router.post('/generate-blogTitle' , userAccessMiddleware , generateBlogTitle);
 router.post('/generate-image' , userAccessMiddleware , generateImage);
 router.post('/remove-background' ,userAccessMiddleware , upload.single('image') , removeBackground);
 router.post('/remove-object' , userAccessMiddleware , upload.single('image') , removeObject);
-router.post('/remove-object' , userAccessMiddleware , upload.single('resumeFile') , resumeReview);
+router.post('/review-resume' , userAccessMiddleware , upload.single('resumeFile') , resumeReview);
 
 export default router;
