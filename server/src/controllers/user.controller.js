@@ -11,9 +11,29 @@ const getUserCreations = expressAsyncHandler(async(req , res)=>{
               WHERE user_id = ${userId}
               ORDER BY created_at DESC`
 
-    if(!creations) throw new ApiError(400 , "ubale to fetch users creations");
+    if(!creations) throw new ApiError(400 , "unable to fetch users creations");
 
     return res
             .status(200)
             .json(new ApiResponse(200 , creations , "Users creations fetched successfully!!"));
 }) 
+
+const getAllPublishedCreations = expressAsyncHandler(async(req , res)=>{
+
+    const creations = await sql`SELECT *
+              FROM creations
+              WHERE publish = true
+              ORDER BY created_at DESC`
+
+    if(!creations) throw new ApiError(400 , "unable to fetch published creations");
+
+    return res
+            .status(200)
+            .json(new ApiResponse(200 , creations , "All Published creations fetched successfully!!"));
+}) 
+
+
+export {
+    getUserCreations ,
+    getAllPublishedCreations ,
+}
