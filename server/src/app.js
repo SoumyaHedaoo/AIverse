@@ -22,7 +22,9 @@ app.get('/' , (req , res)=>{
 });
 
 import aiRouter from './routes/ai.routes.js';
+import userRouter from './routes/user.routes.js';
 
 app.use('/api/v1/ai' , requireAuth() , aiRouter);
+app.use('/api/v1/user' , requireAuth() , userRouter);
 
 export {app};
