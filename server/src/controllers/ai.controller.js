@@ -8,7 +8,8 @@ import { ApiError } from "../utils/apiError.js";
 import axios from "axios";
 import { uploadOnCloudinary } from "../utils/cloudinaryUploader.js";
 import fs from 'fs/promises';
-import pdf from 'pdf-parse/lib/pdf-parser.js'
+
+
 
 const ai = new OpenAI({
     apiKey: `${process.env.GEMINI_API_KEY}`,
@@ -217,11 +218,13 @@ const resumeReview = expressAsyncHandler(async (req, res) => {
   if(resumeFile.size > 5*1024*1024) throw new ApiError(400 , "file size exceeds allowed limit of 5MB");
 
   const dataBuffer = fs.readFileSync(resumeFile.path);
-  const pdfData = await pdf(dataBuffer);
+  const pdf = await getDocumentProxy(new Uint8Array(dataBuffer));
+
+   const { totalPages, text } = await extractText(pdf, { mergePages: true });
 
   const prompt = `You are an expert resume reviewer and career advisor with 15+ years of experience in recruitment and applicant tracking systems (ATS). Analyze the following resume thoroughly and provide detailed, actionable feedback.
 
-**Resume Content:** \n${pdfData.text}
+**Resume Content:** \n${text}
 
 **Your Review Should Include:**
 
@@ -277,12 +280,14 @@ Be constructive, specific, and actionable in all feedback. Focus on improvements
         },
     ],
     temperature : 0.7,
-    max_tokens : 1000,
+    max_tokens : 3000,
     });
 
 
     const content= response.choices[0].message.content;
   
+    fs.unlinkSync(resumeFile.path);
+    
   await sql`
     INSERT INTO creations (user_id, prompt, content, type)
     VALUES (${userId}, 'review attached resume ', ${content}, 'resume-review')

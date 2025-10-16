@@ -1,7 +1,7 @@
-import { sql } from "../db";
-import { ApiError } from "../utils/apiError";
-import { ApiResponse } from "../utils/apiResponse";
-import { expressAsyncHandler } from "../utils/expressAsyncHandler";
+import { sql } from "../db/index.js";
+import { ApiError } from "../utils/apiError.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import { expressAsyncHandler } from "../utils/expressAsyncHandler.js";
 
 const getUserCreations = expressAsyncHandler(async(req , res)=>{
     const {userId}= req.auth();
