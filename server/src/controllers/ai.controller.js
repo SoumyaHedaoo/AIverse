@@ -8,6 +8,7 @@ import { ApiError } from "../utils/apiError.js";
 import axios from "axios";
 import { uploadOnCloudinary } from "../utils/cloudinaryUploader.js";
 import fs from 'fs/promises';
+import pdf from 'pdf-parse/lib/pdf-parser.js'
 
 const ai = new OpenAI({
     apiKey: `${process.env.GEMINI_API_KEY}`,
@@ -72,7 +73,7 @@ const generateBlogTitle = expressAsyncHandler(async(req , res)=>{
     ],
     temperature : 0.7,
     max_tokens : 200,
-});
+    });
 
     const content = response.choices[0].message.content;
 
@@ -203,10 +204,100 @@ const removeObject = expressAsyncHandler(async (req, res) => {
           .json(new ApiResponse(200, { url: transformedUrl }, "object removed successfully"));
 });
 
+const resumeReview = expressAsyncHandler(async (req, res) => {
+  const { userId } = req.auth();
+  const {objectToRemove} = req.body;
+  const resumeFile = req.file;
+  const plan = req.plan;
+
+  if (plan !== PREMIUM_PLAN) {
+    throw new ApiError(400, "premium feature | Upgrade to continue");
+  }
+
+  if(resumeFile.size > 5*1024*1024) throw new ApiError(400 , "file size exceeds allowed limit of 5MB");
+
+  const dataBuffer = fs.readFileSync(resumeFile.path);
+  const pdfData = await pdf(dataBuffer);
+
+  const prompt = `You are an expert resume reviewer and career advisor with 15+ years of experience in recruitment and applicant tracking systems (ATS). Analyze the following resume thoroughly and provide detailed, actionable feedback.
+
+**Resume Content:** \n${pdfData.text}
+
+**Your Review Should Include:**
+
+1. **Overall Assessment (Score: 0-100)**
+   - Provide an overall quality score with brief justification
+
+2. **Structure & Formatting Analysis**
+   - Evaluate layout, section organization, and visual hierarchy
+   - Check for ATS compatibility issues (tables, graphics, special characters, columns)
+   - Assess readability and professional appearance
+   - Verify consistent formatting, punctuation, and capitalization
+
+3. **Content Quality Review**
+   - Analyze professional summary/objective for impact and relevance
+   - Evaluate work experience descriptions for clarity and achievement-focus
+   - Check if bullet points use strong action verbs and quantifiable metrics
+   - Identify missing or weak quantitative achievements (numbers, percentages, dollar amounts)
+   - Assess skills section for relevance and completeness
+
+4. **ATS Optimization**
+   - Identify missing keywords from job description (if provided)
+   - Suggest industry-specific terminology and skills to add
+   - Check for proper use of job titles and standard section headings
+
+5. **Language & Grammar**
+   - Check for grammatical errors, typos, and spelling mistakes
+   - Identify passive voice usage and suggest active alternatives
+   - Flag redundant phrasing or wordy sections
+   - Ensure consistency in tense usage
+
+6. **Specific Recommendations**
+   - Provide 5-7 prioritized, actionable improvements
+   - Suggest specific rewrites for weak bullet points
+   - Recommend missing sections or information
+   - Identify gaps between resume and job requirements (if job description provided)
+
+7. **Red Flags**
+   - Highlight any concerning elements (employment gaps, frequent job changes, irrelevant information)
+   - Note any content that may raise recruiter concerns
+
+**Output Format:**
+Provide your analysis in structured JSON format with the following keys: overall_score, summary, structure_feedback, content_feedback, ats_recommendations, grammar_issues, specific_improvements (array), red_flags (array), and keywords_to_add (array).
+
+Be constructive, specific, and actionable in all feedback. Focus on improvements that will increase interview likelihood.
+`
+
+    const response = await ai.chat.completions.create({
+    model: "gemini-2.0-flash",
+    messages: [
+        {
+            role: "user",
+            content: prompt,
+        },
+    ],
+    temperature : 0.7,
+    max_tokens : 1000,
+    });
+
+
+    const content= response.choices[0].message.content;
+  
+  await sql`
+    INSERT INTO creations (user_id, prompt, content, type)
+    VALUES (${userId}, 'review attached resume ', ${content}, 'resume-review')
+  `;
+
+  return res
+          .status(200)
+          .json(new ApiResponse(200, content , "resume reviewed successfully"));
+});
+
 export {
     generateArticle ,
     generateBlogTitle , 
     generateImage ,
     removeBackground ,
     removeObject ,
+    resumeReview ,
 }
