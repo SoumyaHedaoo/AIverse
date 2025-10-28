@@ -207,7 +207,7 @@ const removeObject = expressAsyncHandler(async (req, res) => {
   
   await sql`
     INSERT INTO creations (user_id, prompt, content, type)
-    VALUES (${userId}, 'remove background from image', ${transformedUrl}, 'image')
+    VALUES (${userId}, 'remove object from image', ${transformedUrl}, 'image')
   `;
 
   return res
