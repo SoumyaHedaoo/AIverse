@@ -8,6 +8,9 @@ import { ApiError } from "../utils/apiError.js";
 import axios from "axios";
 import { uploadOnCloudinary } from "../utils/cloudinaryUploader.js";
 import fs from 'fs/promises';
+import {createReadStream} from 'fs';  
+import FormData from "form-data";
+
 
 
 
@@ -137,8 +140,11 @@ const removeBackground = expressAsyncHandler(async (req, res) => {
     throw new ApiError(400, "premium feature | Upgrade to continue");
   }
 
+
+  const imageStream = createReadStream(imageLocalPath);
+  
   const formData = new FormData();
-  formData.append('image', image.buffer, image.originalname);
+  formData.append('image_file', imageStream, image.originalname);
 
   const response = await axios.post(
     'https://clipdrop-api.co/remove-background/v1',
@@ -159,7 +165,11 @@ const removeBackground = expressAsyncHandler(async (req, res) => {
     throw new ApiError(500, "Unable to upload to Cloudinary");
   }
 
-  fs.unlink(imageLocalPath);
+  fs.unlink(imageLocalPath , (err)=>{
+    if(err){
+      throw new ApiError(500 , "unable to delete file")
+    }
+  });
   
   await sql`
     INSERT INTO creations (user_id, prompt, content, type)
