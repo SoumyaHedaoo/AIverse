@@ -8,8 +8,9 @@ import { ApiError } from "../utils/apiError.js";
 import axios from "axios";
 import { uploadOnCloudinary } from "../utils/cloudinaryUploader.js";
 import fs from 'fs/promises';
-import {createReadStream} from 'fs';  
+import {createReadStream , readFileSync} from 'fs';  
 import FormData from "form-data";
+import { getDocumentProxy , extractText } from "unpdf";
 
 
 
@@ -227,7 +228,7 @@ const resumeReview = expressAsyncHandler(async (req, res) => {
 
   if(resumeFile.size > 5*1024*1024) throw new ApiError(400 , "file size exceeds allowed limit of 5MB");
 
-  const dataBuffer = fs.readFileSync(resumeFile.path);
+  const dataBuffer = readFileSync(resumeFile.path);
   const pdf = await getDocumentProxy(new Uint8Array(dataBuffer));
 
    const { totalPages, text } = await extractText(pdf, { mergePages: true });
@@ -236,47 +237,26 @@ const resumeReview = expressAsyncHandler(async (req, res) => {
 
 **Resume Content:** \n${text}
 
-**Your Review Should Include:**
+Analyze the provided resume and respond ONLY with a single prettified JSON object (not markdown; do not wrap in code block) containing well-typed fields as described:
 
-1. **Overall Assessment (Score: 0-100)**
-   - Provide an overall quality score with brief justification
+{
+  "overall_score": number (0-100),
+  "summary": string (concise but impactful summary),
+  "structure_feedback": string (clear, separated by paragraphs if needed),
+  "content_feedback": string (clear, separated by paragraphs if needed),
+  "ats_recommendations": string,
+  "grammar_issues": string,
+  "specific_improvements": [ { "priority": number, "description": string }, ... ],
+  "red_flags": [ string, ... ], // Can be empty array
+  "keywords_to_add": [ string, ... ] // Can be empty array
+}
 
-2. **Structure & Formatting Analysis**
-   - Evaluate layout, section organization, and visual hierarchy
-   - Check for ATS compatibility issues (tables, graphics, special characters, columns)
-   - Assess readability and professional appearance
-   - Verify consistent formatting, punctuation, and capitalization
+**Instructions:**
+- Each array should be cleanly formed and use plain text (no HTML/markdown in values).
+- Do not return markdown or code blocks. Only return the JSON data, formatted for readability.
+- Ensure each object field is present, even if its value is null or empty (i.e., always include all keys so the UI remains consistent).
+- Write actionable, readable, and concise content for each section.
 
-3. **Content Quality Review**
-   - Analyze professional summary/objective for impact and relevance
-   - Evaluate work experience descriptions for clarity and achievement-focus
-   - Check if bullet points use strong action verbs and quantifiable metrics
-   - Identify missing or weak quantitative achievements (numbers, percentages, dollar amounts)
-   - Assess skills section for relevance and completeness
-
-4. **ATS Optimization**
-   - Identify missing keywords from job description (if provided)
-   - Suggest industry-specific terminology and skills to add
-   - Check for proper use of job titles and standard section headings
-
-5. **Language & Grammar**
-   - Check for grammatical errors, typos, and spelling mistakes
-   - Identify passive voice usage and suggest active alternatives
-   - Flag redundant phrasing or wordy sections
-   - Ensure consistency in tense usage
-
-6. **Specific Recommendations**
-   - Provide 5-7 prioritized, actionable improvements
-   - Suggest specific rewrites for weak bullet points
-   - Recommend missing sections or information
-   - Identify gaps between resume and job requirements (if job description provided)
-
-7. **Red Flags**
-   - Highlight any concerning elements (employment gaps, frequent job changes, irrelevant information)
-   - Note any content that may raise recruiter concerns
-
-**Output Format:**
-Provide your analysis in structured JSON format with the following keys: overall_score, summary, structure_feedback, content_feedback, ats_recommendations, grammar_issues, specific_improvements (array), red_flags (array), and keywords_to_add (array).
 
 Be constructive, specific, and actionable in all feedback. Focus on improvements that will increase interview likelihood.
 `
@@ -296,7 +276,11 @@ Be constructive, specific, and actionable in all feedback. Focus on improvements
 
     const content= response.choices[0].message.content;
   
-    fs.unlinkSync(resumeFile.path);
+    fs.unlink(resumeFile.path , (err)=>{
+    if(err){
+      throw new ApiError(500 , "unable to delete file")
+    }
+  });
     
   await sql`
     INSERT INTO creations (user_id, prompt, content, type)
