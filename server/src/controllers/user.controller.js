@@ -32,40 +32,43 @@ const getAllPublishedCreations = expressAsyncHandler(async(req , res)=>{
             .json(new ApiResponse(200 , creations , "All Published creations fetched successfully!!"));
 }) 
 
-const toggleCreationsLikeStatus = expressAsyncHandler(async(req , res)=>{
-    const {userId}= req.auth();
-    const {id} = req.body;
+const toggleCreationsLikeStatus = expressAsyncHandler(async (req, res) => {
+  const { userId } = req.auth();
+  const { id } = req.body;
 
-    const creation = await sql`SELECT *
-              FROM creations
-              WHERE id = ${id}`
+  // SQL returns an array, get first element or null
+  const creationArray = await sql`
+    SELECT *
+    FROM creations
+    WHERE id = ${id}
+  `;
+  const creation = creationArray[0]; 
 
+  if (!creation) throw new ApiError(404, "user creation not found");
 
+  const currentLikes = creation.likes || [];
+  const strUserId = userId.toString();
+  let updatedLikes, message;
 
-    if(!creation) throw new ApiError(404 , "user creation not found");
+  if (currentLikes.includes(strUserId)) {
+    updatedLikes = currentLikes.filter((user) => user !== strUserId);
+    message = "creation unliked";
+  } else {
+    updatedLikes = [...currentLikes, strUserId];
+    message = "creation liked";
+  }
 
-    const currentLikes = creation.likes;
-    const strUserId = userId.toString();
-    let updatedLikes , message;
+  const formattedArray = `{${updatedLikes.join(',')}}`;
 
-    if(currentLikes.includes(strUserId)){
-        updatedLikes=currentLikes.filter((user)=> user !== strUserId);
-        message = "creation unliked";
-    }else{
-        updatedLikes=[...currentLikes , strUserId];
-        message("creation liked");
-    }
+  await sql`
+    UPDATE creations
+    SET likes = ${formattedArray}::text[]
+    WHERE id = ${id}
+  `;
 
-    const formattedArray =`{${updatedLikes.json(',')}}`
-    
-    await sql`UPDATE creations
-              SET likes = ${formattedArray}::text[] 
-              WHERE id=${id}`;
+  return res.status(200).json(new ApiResponse(200, { likes: updatedLikes }, message));
+});
 
-    return res
-            .status(200)
-            .json(new ApiResponse(200 , {} , message));
-}) 
 
 
 
