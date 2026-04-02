@@ -12,8 +12,6 @@
 
 **Unifying text generation, image creation, and intelligent analysis into one powerful SaaS platform**
 
-[🚀 Live Demo](#) · [📖 Documentation](#) · [🐛 Report Bug](#) · [✨ Request Feature](#)
-
 ---
 
 </div>
